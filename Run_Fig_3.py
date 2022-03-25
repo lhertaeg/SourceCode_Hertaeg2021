@@ -1,30 +1,35 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Mon Jun 28 13:58:15 2021
-
-@author: loreen.hertaeg
+nPE and pPE neurons develop through inhibitory plasticity with a low homeostatic target rate. 
 """
 
 
-import numpy as np
-import pickle
+# %% Import 
+
 import matplotlib.pyplot as plt
-import seaborn as sns
 import matplotlib.gridspec as gridspec
+import os.path
 
-from Functions_Save import Create_PathPlot
-from Functions_Save import LoadAnalysisActivity, LoadInputs_MM_PB, LoadGeneralisability, LoadNetworkPara, LoadInputsPCs, LoadRobustness
-from Functions_Plot import Plot_Inputs_MM_PB, Plot_Generalisability, Plot_PC_Activity_Test, Plot_Inputs_to_PCs, Plot_Robustness
-
-inch = 2.54
+from Functions_Save import LoadAnalysisActivity, LoadGeneralisability, LoadNetworkPara, LoadInputsPCs, LoadRobustness
+from Functions_Plot import Plot_Generalisability, Plot_PC_Activity_Test, Plot_Inputs_to_PCs, Plot_Robustness
+from Run_FullNet import run_static_network_before, run_plastic_network, run_generalise, run_robustness
 
 # %% Figure 3
 
-### Define Data structure for storage
-folder = 'Plasticity'
-fln_plot = 'Figure_3'
+### Universal parameters
 fs = 6
+inch = 2.54
+
+
+### Define path and folder
+folder = 'Plasticity'
+path = 'Results/Data/' + folder
+figPath = 'Results/Figures/' + folder
+
+if not os.path.exists(path):
+    os.mkdir(path)
+    
+if not os.path.exists(figPath):
+    os.mkdir(figPath)
 
 
 ### Define figure structure
@@ -76,11 +81,16 @@ ax_H = fig.add_subplot(H[0,1])
 ax_H.set_title('Robustness', fontsize=fs, pad=5)
 
 
-### Load data and Plot
+### Load data if possible or run simulation/analysis, plotting
 
 ## Before learning
 fln_before = 'Example_Before'
 fln_data = 'Data_Inputs2PCs_Network_Before'
+
+if not os.path.isfile(path + '/Data_NetworkParameters_' + fln_before + '.pickle'):
+    run_static_network_before(folder, fln_before)
+    
+
 NeuPar, NetPar, InPar, StimPar_Test, SimPar_Test, RatePar, _ = LoadNetworkPara(folder, fln_before)
 
 t, RE, _, _, _, bool_nPE, bool_pPE = LoadAnalysisActivity(folder, fln_before)
@@ -94,13 +104,20 @@ Plot_Inputs_to_PCs(NeuPar, t, Inp_soma_Exc, Inp_soma_Inh, Inp_dend_Exc, Inp_dend
 fln = 'Target_Rate_After'
 fln_exp = 'Example_' + fln
 fln_inp_FBBL = 'Data_Inputs2PCs_Network_' + fln
-fln_inp_MMPB = 'Data_Inputs_MM_PB_' + fln
 fln_gen = 'Data_Generalisability_Network_' + fln
 fln_rob_supp = 'Data_Robustness_Network_' + fln + '_suppress'
 fln_rob_stim = 'Data_Robustness_Network_' + fln + '_stimulate'
 
+if not os.path.isfile(path + '/Data_NetworkParameters_' + fln_exp + '.pickle'):
+    run_plastic_network(folder, fln, 0)
+    
+if not os.path.isfile(path + '/' + fln_gen + '.pickle'):
+    run_generalise(folder, 0)
+
+if not os.path.isfile(path + '/' + fln_rob_supp + '.pickle'):
+    run_robustness(folder, 0)
+
 NeuPar, NetPar, _, _, _, _, LearnPar = LoadNetworkPara(folder, fln_exp) 
-Inp_MM, Inp_PB = LoadInputs_MM_PB(folder, fln_inp_MMPB)
 stimuli, FB, stim_max_training = LoadGeneralisability(folder, fln_gen)
 FB_1, _, E_Ctrl_1 = LoadRobustness(folder, fln_rob_supp)
 FB_2, _, E_Ctrl_2 = LoadRobustness(folder, fln_rob_stim)
@@ -121,13 +138,20 @@ Plot_Robustness(FB_1, E_Ctrl_1[:,1], FB_2, E_Ctrl_2[:,1], [-2,2], None, idx=(boo
 fln = 'Target_Input_After'
 fln_exp = 'Example_' + fln
 fln_inp_FBBL = 'Data_Inputs2PCs_Network_' + fln
-fln_inp_MMPB = 'Data_Inputs_MM_PB_' + fln
 fln_gen = 'Data_Generalisability_Network_' + fln
 fln_rob_supp = 'Data_Robustness_Network_' + fln + '_suppress'
 fln_rob_stim = 'Data_Robustness_Network_' + fln + '_stimulate'
 
+if not os.path.isfile(path + '/Data_NetworkParameters_' + fln_exp + '.pickle'):
+    run_plastic_network(folder, fln, 1)
+    
+if not os.path.isfile(path + '/' + fln_gen + '.pickle'):
+    run_generalise(folder, 1)
+
+if not os.path.isfile(path + '/' + fln_rob_supp + '.pickle'):
+    run_robustness(folder, 1)
+
 NeuPar, NetPar, _, _, _, _, LearnPar = LoadNetworkPara(folder, fln_exp) 
-Inp_MM, Inp_PB = LoadInputs_MM_PB(folder, fln_inp_MMPB)
 stimuli, FB, stim_max_training = LoadGeneralisability(folder, fln_gen)
 FB_1, _, E_Ctrl_1 = LoadRobustness(folder, fln_rob_supp)
 FB_2, _, E_Ctrl_2 = LoadRobustness(folder, fln_rob_stim)
@@ -138,8 +162,6 @@ Plot_PC_Activity_Test(t, RE, bool_nPE, bool_pPE, StimPar_Test, SimPar_Test, fold
 t, Inp_soma_Exc, Inp_soma_Inh, Inp_dend_Exc, Inp_dend_Inh, V, M = LoadInputsPCs(folder, fln_inp_FBBL)
 Plot_Inputs_to_PCs(NeuPar, t, Inp_soma_Exc, Inp_soma_Inh, Inp_dend_Exc, Inp_dend_Inh, V, M, None, fs=fs, G=F2)
 
-#Plot_Inputs_MM_PB(Inp_MM, Inp_PB, bool_nPE, bool_pPE, folder, None, ms=2, fs=fs, axs=ax_G)
-
 Plot_Generalisability(stimuli, FB, stim_max_training,  None, idx=(bool_nPE + bool_pPE), ms=2, fs=fs, axs=ax_G)
 
 Plot_Robustness(FB_1, E_Ctrl_1[:,1], FB_2, E_Ctrl_2[:,1], [-2,2], None, idx=(bool_nPE + bool_pPE), ms=3,
@@ -147,7 +169,5 @@ Plot_Robustness(FB_1, E_Ctrl_1[:,1], FB_2, E_Ctrl_2[:,1], [-2,2], None, idx=(boo
 
 
 ### Save figure
-FigPath = 'Results/Figures/' + folder
-plt.savefig(FigPath + '/Fig_3.png', bbox_inches='tight', transparent=True, dpi=600)
+plt.savefig(figPath + '/Fig_3.png', bbox_inches='tight', transparent=True, dpi=600)
 
-plt.close(fig)

@@ -1,29 +1,36 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
-Created on Sat Jun 19 11:34:54 2021
+Figure 2: PE neurons are robust to moderate network perturbations.
+"""
 
-@author: loreen.hertaeg
-"""
+# %% Import 
 
 import numpy as np
 import pickle
 import matplotlib.pyplot as plt
-import seaborn as sns
 import matplotlib.gridspec as gridspec
+import os.path
 
-from Functions_Save import Create_PathFilePickle, Create_PathPlot
-from Functions_Plot import Plot_Manipulation_BL_FB, Plot_Manipulation_Space, Plot_Manipulation_Space_Summary
+from Functions_Save import Create_PathFilePickle
+from Functions_Plot import Plot_Manipulation_BL_FB, Plot_Manipulation_Space_Summary
 from Functions_Plot import Plot_Manipulation_Space_Scheme, Plot_Colorbar
-
-inch = 2.54
+from Run_MFN import run_perturbation
 
 # %% Figure 2
 
-### Define Data structure for storage
-folder = 'Manipulation'
-fln_plot = 'Figure_2'
+### Universal parameters
 fs = 5
+inch = 2.54
+
+### Define path and folder
+folder = 'Manipulation'
+path = 'Results/Data/' + folder
+figPath = 'Results/Figures/' + folder
+
+if not os.path.exists(path):
+    os.mkdir(path)
+    
+if not os.path.exists(figPath):
+    os.mkdir(figPath)
 
 ### Define figure structure
 figsize=(13/inch,8/inch)
@@ -53,11 +60,16 @@ ax_D21 = fig.add_subplot(D[1,0])
 ax_D22 = fig.add_subplot(D[1,1])
 plt.setp(ax_D22.get_yticklabels(), visible=False)
 
-### Load data
-_, filename_load_10 = Create_PathFilePickle(folder, 'Data_Manipulation_MFN_10')
+### Load data if possible or run simulation/analysis
+fln_10 = 'Data_Manipulation_MFN_10'
 
+if not os.path.isfile(path + '/' + fln_10 + '.pickle'):
+    run_perturbation('Balance', folder, 1, 0)
+
+_, filename_load_10 = Create_PathFilePickle(folder, fln_10)
 with open(filename_load_10,'rb') as f:
     stim_extra_all, Inputs_nPE_10, Inputs_pPE_10 = pickle.load(f)  
+
 
 ### Plot 
 Plot_Colorbar(ax_colorbar, 'horizontal', 'Perturbation (1/s)', vmin=-1.5, vmax=1.5)
@@ -81,7 +93,4 @@ Plot_Manipulation_Space_Scheme(None, ax=ax_C, ms=3, fs=fs, lw=0.5)
 
 
 ### Save figure
-FigPath = 'Results/Figures/' + folder
-plt.savefig(FigPath + '/Fig_2.pdf', bbox_inches='tight', transparent=True, dpi=500)
-
-plt.close(fig)
+plt.savefig(figPath + '/Fig_2.pdf', bbox_inches='tight', transparent=True, dpi=500)
